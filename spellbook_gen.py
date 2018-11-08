@@ -9,23 +9,44 @@
 from PIL import Image
 import random
 import math
+import markov
 
 # Book templates are tuples
 # index 0 = file path
 # index 1 = another tuple, indicating the area where the icon is applied
 #           first two are the top left corner, second two are dimensions
 TEMPLATES = [("book.png",(2,1,4,6)),
+             ("borderedbook.png",(2,1,4,6)),
              ]
 MODIFIERS = [None,
              "bookmark.png",
              "tabs.png",
              ]
 
-class spellbook_sprite(object):
-    def __init__(self,templates=TEMPLATES,modifiers=MODIFIERS):
+with open("martial.txt") as text:
+    MARKOV = markov.MarkovChain(text.read())
+
+class spellbook(object):
+    def __init__(self,templates=TEMPLATES,modifiers=MODIFIERS,markov_chain=MARKOV):
         self.template = templates[random.randrange(len(templates))]
         self.modifier = modifiers[random.randrange(len(modifiers))]
+        self.markov = markov_chain
         self.generate()
+        self.generate_title()
+
+    def show(self,*args,**kwargs):
+        if kwargs.has_key("size"):
+            self.size = kwargs["size"]
+        else:
+            dimensions = self.template[1]
+            if dimensions[2] < 200 or dimensions[3] < 200:
+                if dimensions[2] > dimensions[3]:
+                    scale_factor = 200/dimensions[3]
+                else:
+                    scale_factor = 200/dimensions[2]
+                size = (dimensions[2]*scale_factor,
+                        dimensions[3]*scale_factor)
+        self.sprite.resize(size).show()
         
 
     def generate(self):
@@ -88,7 +109,17 @@ class spellbook_sprite(object):
                 pix[dimensions[2]-x-1,y] = colour
                 pix[dimensions[2]-x-1,dimensions[3]-y-1] = colour
         return icon
-                
+
+    def generate_title(self):
+        self.title = self.markov.words[random.randrange(0,len(self.markov.words))]
+        last_word = self.title
+        for i in range(random.randint(2,5)):
+            last_word = self.markov.suggest(last_word)
+            self.title += (" "+last_word)
         
+                
+class spellbook_sprite(spellbook):
+    def generate_title(self):
+        pass
         
         
